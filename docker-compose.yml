@@ -14,6 +14,9 @@ services:
             - redis
         networks:
             - laravel
+        command:
+            # sh -c "composer install && php artisan key:generate && php artisan migrate && php-fpm"
+            sh -c "composer install && php artisan key:generate && php artisan migrate && php artisan db:seed && php-fpm"
 
     # nginx
     nginx:
@@ -46,6 +49,7 @@ services:
     # redis
     redis:
         image: redis:latest
+        restart: unless-stopped
         networks:
             - laravel
 
