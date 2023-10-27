@@ -13,6 +13,13 @@ abstract class IUsersRepository
         $this->userGroupRepository = $userGroupRepository;
     }
 
-    abstract protected function create(string $name, string $username, string $email, string $password, string $user_group): bool;
-    abstract protected function createEmptyUserWithKey(string $user_group): string;
+    abstract public function create(string $name, string $email, string $password, string $user_group): bool;
+    abstract public function createEmptyUserWithKey(string $user_group): string;
+
+    abstract public function getAll(string $user_group): array;
+    abstract public function getById(int $id): array;
+    abstract public function getByEmail(string $email): array;
+    abstract public function checkUserPasswordByEmail(string $email, string $password): bool;
+    abstract public function createTokenByUserEmail(string $email, string $device_name): string;
+
 };

@@ -15,6 +15,10 @@ class UsersGroupDTO
         $this->name = $name;
     }
 
+    /**
+     * @param UsersGroup $model
+     * @return UsersGroupDTO
+     */
     public static function fromModel(UsersGroup $model): UsersGroupDTO
     {
         return new UsersGroupDTO(
@@ -23,6 +27,10 @@ class UsersGroupDTO
         );
     }
 
+    /**
+    * @param UsersGroup[] $models
+    * @return UsersGroupDTO[]
+    */
     public static function fromModels(array $models): array
     {
         $dtos = [];
