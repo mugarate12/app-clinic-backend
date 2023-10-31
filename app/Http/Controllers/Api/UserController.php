@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Interfaces\Repository\IUsersRepository;
+use App\Interfaces\Repository\IUserGroupRepository;
 use App\Enums\UsersGroupsEnum;
+use App\DTO\Users\UserUpdateDTO;
 
 class UserController extends Controller
 {
@@ -13,7 +15,9 @@ class UserController extends Controller
 
     public function __construct(
         protected IUsersRepository $usersRepository,
-    ) {}
+        protected IUserGroupRepository $userGroupRepository
+    ) {
+    }
 
     /**
      * Display a listing of the resource.
@@ -55,6 +59,27 @@ class UserController extends Controller
         ], 201);
     }
 
+    public function storeUserWithKey(Request $request)
+    {
+        $rules = [
+            'email' => 'required|email|unique:users,email',
+            'user_group_name' => 'required|string'
+        ];
+        $request->validate($rules);
+
+        // TODO: validate if user group have permission to create new user to this group in request
+
+        $created_key = $this->usersRepository->createEmptyUserWithKey(
+            $request->email,
+            $request->user_group_name
+        );
+
+        return response()->json([
+            'message' => 'Usuário criado com sucesso!',
+            'key' => $created_key
+        ], 201);
+    }
+
     /**
      * Display the specified resource.
      */
@@ -68,7 +93,66 @@ class UserController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $user_id = $request->user()->id;
+        $user_group_id = $request->user()->user_group_id_FK;
+
+        $user_group = $this->userGroupRepository->getById($user_group_id);
+
+        $is_same_user = $user_id === $id;
+        $is_admin = $user_group->name === UsersGroupsEnum::Admin->value;
+
+        if (!$is_same_user && !$is_admin) {
+            return response()->json([
+                'message' => 'Você não tem permissão para atualizar este usuário!'
+            ], 403);
+        };
+
+        $rules = [
+            'name' => 'string',
+            'email' => 'email|unique:users,email,',
+            'password' => 'min:6',
+        ];
+
+        $request->validate($rules);
+
+        $userUpdateDTO = UserUpdateDTO::fromRequest($request);
+        try {
+            $this->usersRepository->update($id, $userUpdateDTO);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erro ao atualizar usuário!'
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => 'Usuário atualizado com sucesso!'
+        ], 200);
+    }
+
+    public function updateWithKey(Request $request, string $key)
+    {
+        $user = $this->usersRepository->getByKey($key);
+        $id = $user['id'];
+
+        $rules = [
+            'name' => 'required|string',
+            'password' => 'required|min:6',
+        ];
+
+        $request->validate($rules);
+
+        try {
+            $userUpdateDTO = UserUpdateDTO::fromRequest($request);
+            $this->usersRepository->update($id, $userUpdateDTO, true);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Erro ao atualizar usuário!'
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => 'Usuário atualizado com sucesso!'
+        ], 200);
     }
 
     /**
