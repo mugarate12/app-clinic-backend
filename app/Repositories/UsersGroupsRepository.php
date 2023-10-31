@@ -14,16 +14,24 @@ class UsersGroupsRepository implements IUserGroupRepository
 
     public function getById(string $id): UsersGroupDTO
     {
-        $model = UsersGroup::find($id);
+        $user_group = UsersGroup::find($id);
 
-        return UsersGroupDTO::fromModel($model);
+        if (!$user_group) {
+            throw new \Exception('Grupo de usuário não encontrado!');
+        };
+
+        return UsersGroupDTO::fromModel($user_group);
     }
 
     public function getByName(string $name): UsersGroupDTO
     {
-        $model = UsersGroup::where('name', $name)->first();
+        $user_group = UsersGroup::where('name', $name)->first();
 
-        return UsersGroupDTO::fromModel($model);
+        if (!$user_group) {
+            throw new \Exception('Grupo de usuário não encontrado!');
+        };
+
+        return UsersGroupDTO::fromModel($user_group);
     }
 
     public function index(): array

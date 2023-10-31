@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use Illuminate\Support\Facades\Hash;
 use App\Interfaces\Repository\IUsersRepository;
+use App\DTO\Users\UserUpdateDTO;
 use App\Models\User;
 
 class UsersRepository extends IUsersRepository
@@ -22,9 +23,20 @@ class UsersRepository extends IUsersRepository
         return true;
     }
 
-    public function createEmptyUserWithKey(string $user_group): string
+    public function createEmptyUserWithKey(string $email, string $user_group): string
     {
-        return '123456789';
+        $user_group = $this->userGroupRepository->getByName($user_group);
+        $random_string = substr(str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 9);
+
+        User::create([
+            'name' => '',
+            'email' => $email,
+            'password' => bcrypt(''),
+            'key' => $random_string,
+            'user_group_id_FK' => $user_group->id,
+        ]);
+
+        return $random_string;
     }
 
     public function getAll(string $user_group): array
@@ -54,7 +66,19 @@ class UsersRepository extends IUsersRepository
         return $user->toArray();
     }
 
-    public function checkUserPasswordByEmail(string $email, string $password): bool {
+    public function getByKey(string $key): array
+    {
+        $user = User::where('key', $key)->first();
+
+        if (!$user) {
+            throw new \Exception('Usuário não encontrado!');
+        };
+
+        return $user->toArray();
+    }
+
+    public function checkUserPasswordByEmail(string $email, string $password): bool
+    {
         $user = User::where('email', $email)->first();
 
         if (!$user) {
@@ -64,15 +88,38 @@ class UsersRepository extends IUsersRepository
         return Hash::check($password, $user['password']);
     }
 
-    public function createTokenByUserEmail(string $email, string $device_name): string {
+    public function createTokenByUserEmail(string $email, string $device_name): string
+    {
         $user = User::where('email', $email)->first();
 
         if (!$user) {
             throw new \Exception('Usuário não encontrado!');
         };
 
-        $token = $user->createToken($device_name)->plainTextToken;
+        $user_group = $this->userGroupRepository->getById($user['user_group_id_FK']);
+        if (!$user_group) {
+            throw new \Exception('Grupo de usuário não encontrado!');
+        };
+
+        $token = $user->createToken($device_name, ["user_type:{$user_group->name}"])->plainTextToken;
         return $token;
     }
 
+    public function update(string $id, UserUpdateDTO $userUpdateDTO, bool $turnKeyEmpty = false): bool {
+        $user = User::find($id);
+
+        if (!$user) {
+            throw new \Exception('Usuário não encontrado!');
+        };
+
+        if ($userUpdateDTO->name !== '') $user->name = $userUpdateDTO->name;
+        if ($userUpdateDTO->email !== '') $user->email = $userUpdateDTO->email;
+        if ($userUpdateDTO->password !== '') $user->password = bcrypt($userUpdateDTO->password);
+
+        if ($turnKeyEmpty) $user->key = '';
+
+        $user->save();
+
+        return true;
+    }
 };
