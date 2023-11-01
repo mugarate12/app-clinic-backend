@@ -26,9 +26,16 @@ class AuthController extends Controller
         };
 
         $token = $this->usersRepository->createTokenByUserEmail($request->email, $request->device_name);
+        $user_group = $this->usersGroupsRepository->getById($user['user_group_id_FK']);
 
         return response()->json([
+            'id' => $user['id'],
+            'name' => $user['name'],
+            'email' => $user['email'],
+
             'token' => $token,
+
+            'type' => $user_group->name,
         ]);
     }
 }
