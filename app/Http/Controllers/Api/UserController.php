@@ -22,9 +22,28 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $page = $request->query('page', 1);
+        $limit = $request->query('limit', 10);
+
+        $offset = $page <= 1 ? 0 : $page * $limit;
+
+        // TODO: check user group if is have permission to filter user group or not
+        $user_id = $request->user()->id;
+        $user_group_id = $request->user()->user_group_id_FK;
+
+        $user_group = $this->userGroupRepository->getById($user_group_id);
+
+        $users = $this->usersRepository->getAll(null, $offset, $limit);
+        $total_of_pages = ceil($this->usersRepository->getAllCount(null) / $limit);
+
+        return response()->json([
+            'data' => $users,
+            'page' => $page,
+            'items_per_page' => $limit,
+            'total_of_pages' => $total_of_pages
+        ], 200);
     }
 
     /**

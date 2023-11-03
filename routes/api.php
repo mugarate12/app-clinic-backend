@@ -29,12 +29,15 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // USER ROUTES
 Route::middleware(onlyAdmin)->group(function () {
-    Route::post('/user/admin', [UserController::class, 'storeNewAdmin']);
+    Route::post('/users/admin', [UserController::class, 'storeNewAdmin']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/user/with_key', [UserController::class, 'storeUserWithKey']);
-    Route::put('/user/{id}', [UserController::class, 'update']);
+    Route::get('/users', [UserController::class, 'index']);
+
+    Route::post('/users/with_key', [UserController::class, 'storeUserWithKey']);
+
+    Route::put('/users/{id}', [UserController::class, 'update']);
 });
 
-Route::put('/user/with_key/{key}', [UserController::class, 'updateWithKey']);
+Route::put('/users/with_key/{key}', [UserController::class, 'updateWithKey']);

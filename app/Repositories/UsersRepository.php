@@ -39,9 +39,52 @@ class UsersRepository extends IUsersRepository
         return $random_string;
     }
 
-    public function getAll(string $user_group): array
+    public function getAll(string $user_group = null, int $offset = 0, int $limit = 10): array
     {
-        return [];
+        $users = null;
+
+        if ($user_group) {
+            $user_group_doc = $this->userGroupRepository->getByName($user_group);
+
+            if (!$user_group_doc) {
+                throw new \Exception('Grupo de usuário não encontrado!');
+            };
+
+            $users = User::where('user_group_id_FK', $user_group_doc->id)
+                ->offset($offset)
+                ->limit($limit)
+                ->get();
+        } else {
+            $users = User::offset($offset)
+                ->limit($limit)
+                ->get();
+        };
+
+
+        if (!$users) {
+            return [];
+        };
+
+        return $users->toArray();
+    }
+
+    public function getAllCount(string $user_group = null): int {
+        $total = null;
+
+        if ($user_group) {
+            $user_group_doc = $this->userGroupRepository->getByName($user_group);
+
+            if (!$user_group_doc) {
+                throw new \Exception('Grupo de usuário não encontrado!');
+            };
+
+            $total = User::where('user_group_id_FK', $user_group_doc->id)
+                ->count();
+        } else {
+            $total = User::count();
+        };
+
+        return $total;
     }
 
     public function getById(int $id): array
@@ -105,7 +148,8 @@ class UsersRepository extends IUsersRepository
         return $token;
     }
 
-    public function update(string $id, UserUpdateDTO $userUpdateDTO, bool $turnKeyEmpty = false): bool {
+    public function update(string $id, UserUpdateDTO $userUpdateDTO, bool $turnKeyEmpty = false): bool
+    {
         $user = User::find($id);
 
         if (!$user) {
